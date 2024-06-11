@@ -7,6 +7,7 @@ import br.jus.tjrj.indicadores_disponibilidade_pje.dto.DadosMediaMes;
 import br.jus.tjrj.indicadores_disponibilidade_pje.entity.IndicadorDisponibilidade;
 import br.jus.tjrj.indicadores_disponibilidade_pje.entity.Origem;
 import br.jus.tjrj.indicadores_disponibilidade_pje.repository.IndicadorRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +30,10 @@ public class IndicadorService {
 
         // 1. Obter a soma das quantidades por mês e origem
         List<Object[]> MediaIndicadorPorMes= repository.findMediaIndicadorPorMes(ano);
+
+        if (MediaIndicadorPorMes.isEmpty()) {
+            throw new EntityNotFoundException("Não há dados disponíveis para o ano especificado.");
+        }
 
         // 2. Agrupar por mês
         Map<Integer, List<DadosMediaMes.IndicadorMensal>> indicadoresPorMes = MediaIndicadorPorMes.stream()
@@ -58,6 +63,10 @@ public class IndicadorService {
     public List<DadosIndicadoresDia> obterIndicadoresPorDia(int ano) {
         List<Object[]> resultados = repository.findIndicadoresPorDiaAgrupados(ano);
 
+        if (resultados.isEmpty()) {
+            throw new EntityNotFoundException("Não há dados disponíveis para o período especificado.");
+        }
+
         Map<LocalDate, List<DadosIndicadoresDia.IndicadorDiario>> indicadoresPorData = resultados.stream()
                 .collect(Collectors.groupingBy(
                         resultado -> (LocalDate) resultado[0],
@@ -82,7 +91,7 @@ public class IndicadorService {
         List<IndicadorDisponibilidade> indicadores = repository.findByOrigemAndData(origem, data);
 
         if (indicadores.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Indicadores não encontrados para a data e origem especificadas.");
+            throw new EntityNotFoundException("Não há dados disponíveis para a data e origem especificadas.");
         }
 
         List<DadosIndicadorHora.IndicadorHora> indicadoresHora = indicadores.stream()
@@ -106,7 +115,7 @@ public class IndicadorService {
         List<Object[]> resultados = repository.findByOrigemEMesEAno(nomeOrigem, mes, ano);
 
         if (resultados.isEmpty()) {
-            throw new IllegalArgumentException("Origem não encontrada ou não há dados para o período: " + nomeOrigem);
+            throw new EntityNotFoundException("Origem não encontrada ou não há dados para o período: " + nomeOrigem);
         }
 
         List<DadosIndicadorHoraMes.IndicadorHoraMes> indicadores = resultados.stream()
