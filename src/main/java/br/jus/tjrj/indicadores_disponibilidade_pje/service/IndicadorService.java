@@ -7,6 +7,7 @@ import br.jus.tjrj.indicadores_disponibilidade_pje.dto.DadosMediaMes;
 import br.jus.tjrj.indicadores_disponibilidade_pje.entity.IndicadorDisponibilidade;
 import br.jus.tjrj.indicadores_disponibilidade_pje.entity.Origem;
 import br.jus.tjrj.indicadores_disponibilidade_pje.repository.IndicadorRepository;
+import br.jus.tjrj.indicadores_disponibilidade_pje.repository.OrigemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -26,10 +27,13 @@ public class IndicadorService {
     @Autowired
     private IndicadorRepository repository;
 
+    @Autowired
+    private OrigemRepository origemRepository;
+
     public List<DadosMediaMes> obterMediasMensaisPorAno(int ano) {
 
         // 1. Obter a soma das quantidades por mês e origem
-        List<Object[]> MediaIndicadorPorMes= repository.findMediaIndicadorPorMes(ano);
+        List<Object[]> MediaIndicadorPorMes = repository.findMediaIndicadorPorMes(ano);
 
         if (MediaIndicadorPorMes.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para o ano especificado.");
@@ -87,8 +91,9 @@ public class IndicadorService {
     }
 
 
-    public DadosIndicadorHora obterIndicadorPorDiaHoraEOrigem(LocalDate data, String origem) {
+    public DadosIndicadorHora obterIndicadorPorDiaHoraEOrigem(LocalDate data, Origem.OrigemEnum origem) {
         List<IndicadorDisponibilidade> indicadores = repository.findByOrigemAndData(origem, data);
+
 
         if (indicadores.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para a data e origem especificadas.");
@@ -111,25 +116,28 @@ public class IndicadorService {
         );
     }
 
-    public DadosIndicadorHoraMes obterIndicadorPorMesHoraEOrigem(String nomeOrigem, int mes, int ano) {
-        List<Object[]> resultados = repository.findByOrigemEMesEAno(nomeOrigem, mes, ano);
+    public DadosIndicadorHoraMes obterIndicadorPorMesHoraEOrigem(Origem.OrigemEnum origemEnum, int mes, int ano) {
+        // 1. Buscar a entidade Origem pelo valor do enum (opcional, mas recomendado)
+        Origem origemEntity = origemRepository.findByOrigem(origemEnum)
+                .orElseThrow(() -> new EntityNotFoundException("Origem não encontrada: " + origemEnum));
 
+        // 2. Obter os resultados da consulta (usando a entidade Origem ou o enum diretamente)
+        List<Object[]> resultados = repository.findByOrigemEMesEAno(origemEnum, mes, ano);
+
+        // 3. Verificar se há resultados
         if (resultados.isEmpty()) {
-            throw new EntityNotFoundException("Origem não encontrada ou não há dados para o período: " + nomeOrigem);
+            throw new EntityNotFoundException("Não há dados para o período: " + origemEnum);
         }
 
+        // 4. Mapear os resultados para o DTO
         List<DadosIndicadorHoraMes.IndicadorHoraMes> indicadores = resultados.stream()
-                .map(resultado -> {
-                    double mediaOriginal = (double) resultado[4];
-                    double mediaFormatada = Math.round(mediaOriginal * 100.0) / 100.0; // Arredonda para 2 casas decimais
-                    return new DadosIndicadorHoraMes.IndicadorHoraMes((int) resultado[3], mediaFormatada);
-                })
+                .map(resultado -> new DadosIndicadorHoraMes.IndicadorHoraMes((int) resultado[3], (double) resultado[4]))
                 .toList();
 
-        String origem = (String) resultados.get(0)[2];
-
-        return new DadosIndicadorHoraMes(ano, mes, origem, indicadores);
+        // 5. Criar e retornar o DTO (usando o nome da origem do enum)
+        return new DadosIndicadorHoraMes(ano, mes, origemEnum.name(), indicadores); // Usar o nome do enum
     }
+
 }
 
 
