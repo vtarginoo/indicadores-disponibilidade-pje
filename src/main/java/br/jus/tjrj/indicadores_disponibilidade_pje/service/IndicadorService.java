@@ -6,6 +6,9 @@ import br.jus.tjrj.indicadores_disponibilidade_pje.dto.DadosIndicadoresDia;
 import br.jus.tjrj.indicadores_disponibilidade_pje.dto.DadosMediaMes;
 import br.jus.tjrj.indicadores_disponibilidade_pje.entity.IndicadorDisponibilidade;
 import br.jus.tjrj.indicadores_disponibilidade_pje.entity.Origem;
+import br.jus.tjrj.indicadores_disponibilidade_pje.entity.projections.IndicadorHoraMesProjection;
+import br.jus.tjrj.indicadores_disponibilidade_pje.entity.projections.IndicadoresDiaProjection;
+import br.jus.tjrj.indicadores_disponibilidade_pje.entity.projections.MediaIndicadorPorMesProjection;
 import br.jus.tjrj.indicadores_disponibilidade_pje.repository.IndicadorRepository;
 import br.jus.tjrj.indicadores_disponibilidade_pje.repository.OrigemRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
@@ -30,42 +34,35 @@ public class IndicadorService {
     @Autowired
     private OrigemRepository origemRepository;
 
+    //AllMonth
     public List<DadosMediaMes> obterMediasMensaisPorAno(int ano) {
 
-        // 1. Obter a soma das quantidades por mês e origem
-        List<Object[]> MediaIndicadorPorMes = repository.findMediaIndicadorPorMes(ano);
+        List<MediaIndicadorPorMesProjection> somaQuantidadeMesEOrigem = repository.findMediaIndicadorPorMes(ano);
 
-        if (MediaIndicadorPorMes.isEmpty()) {
+        if (somaQuantidadeMesEOrigem.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para o ano especificado.");
         }
 
-        // 2. Agrupar por mês
-        Map<Integer, List<DadosMediaMes.IndicadorMensal>> indicadoresPorMes = MediaIndicadorPorMes.stream()
-                .collect(Collectors.groupingBy(
-                        r -> (Integer) r[0], // Agrupa pelo mês
+        Map<Integer, List<DadosMediaMes.IndicadorMensal>> indicadoresPorMes = somaQuantidadeMesEOrigem.stream()
+                .collect(Collectors.groupingBy(MediaIndicadorPorMesProjection::getMes,
                         Collectors.mapping(
-                                r -> {
-                                    String origem = String.valueOf(r[1]);
-                                    int mesNumero = (Integer) r[0];
-                                    YearMonth yearMonth = YearMonth.of(ano, mesNumero);
-                                    double mediaDiaria = Math.round(((Long) r[2]).doubleValue() / yearMonth.lengthOfMonth() * 100.0) / 100.0;
-                                    return new DadosMediaMes.IndicadorMensal(origem, mediaDiaria);
+                                p -> {
+                                    YearMonth yearMonth = YearMonth.of(ano, p.getMes());
+                                    double mediaDiaria = Math.round((p.getSomaQuantidade().doubleValue() / yearMonth.lengthOfMonth()) * 100.0) / 100.0;
+                                    return new DadosMediaMes.IndicadorMensal(p.getOrigem(), mediaDiaria);
                                 },
                                 Collectors.toList()
                         )
                 ));
 
-        // 3. Formatar o resultado
-        List<DadosMediaMes> resultado = indicadoresPorMes.entrySet().stream()
+        return indicadoresPorMes.entrySet().stream()
                 .map(entry -> new DadosMediaMes(ano, entry.getKey(), entry.getValue()))
                 .collect(Collectors.toList());
-
-        return resultado;
     }
 
-
-    public List<DadosIndicadoresDia> obterIndicadoresPorDia(int ano) {
-        List<Object[]> resultados = repository.findIndicadoresPorDiaAgrupados(ano);
+    // AllDays
+    public List<DadosIndicadoresDia> indicadoresPorDia(int ano) {
+        List<IndicadoresDiaProjection> resultados = repository.findIndicadoresPorDiaAgrupados(ano);
 
         if (resultados.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para o período especificado.");
@@ -73,9 +70,9 @@ public class IndicadorService {
 
         Map<LocalDate, List<DadosIndicadoresDia.IndicadorDiario>> indicadoresPorData = resultados.stream()
                 .collect(Collectors.groupingBy(
-                        resultado -> (LocalDate) resultado[0],
+                        IndicadoresDiaProjection::getData, // Corrigindo o nome
                         Collectors.mapping(
-                                resultado -> new DadosIndicadoresDia.IndicadorDiario((String) resultado[3], ((Number) resultado[4]).intValue()),
+                                p -> new DadosIndicadoresDia.IndicadorDiario(p.getOrigem().name(), p.getQuantidade()),
                                 Collectors.toList()
                         )
                 ));
@@ -90,10 +87,8 @@ public class IndicadorService {
                 .collect(Collectors.toList());
     }
 
-
     public DadosIndicadorHora obterIndicadorPorDiaHoraEOrigem(LocalDate data, Origem.OrigemEnum origem) {
         List<IndicadorDisponibilidade> indicadores = repository.findByOrigemAndData(origem, data);
-
 
         if (indicadores.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para a data e origem especificadas.");
@@ -116,26 +111,24 @@ public class IndicadorService {
         );
     }
 
+
     public DadosIndicadorHoraMes obterIndicadorPorMesHoraEOrigem(Origem.OrigemEnum origemEnum, int mes, int ano) {
-        // 1. Buscar a entidade Origem pelo valor do enum (opcional, mas recomendado)
         Origem origemEntity = origemRepository.findByOrigem(origemEnum)
                 .orElseThrow(() -> new EntityNotFoundException("Origem não encontrada: " + origemEnum));
 
-        // 2. Obter os resultados da consulta (usando a entidade Origem ou o enum diretamente)
-        List<Object[]> resultados = repository.findByOrigemEMesEAno(origemEnum, mes, ano);
+        List<IndicadorHoraMesProjection> resultados = repository.findByOrigemEMesEAno(origemEnum, mes, ano);
 
-        // 3. Verificar se há resultados
         if (resultados.isEmpty()) {
             throw new EntityNotFoundException("Não há dados para o período: " + origemEnum);
         }
 
-        // 4. Mapear os resultados para o DTO
         List<DadosIndicadorHoraMes.IndicadorHoraMes> indicadores = resultados.stream()
-                .map(resultado -> new DadosIndicadorHoraMes.IndicadorHoraMes((int) resultado[3], (double) resultado[4]))
+                .map(p -> new DadosIndicadorHoraMes.IndicadorHoraMes(p.getHora(), p.getMedia()))
                 .toList();
 
-        // 5. Criar e retornar o DTO (usando o nome da origem do enum)
-        return new DadosIndicadorHoraMes(ano, mes, origemEnum.name(), indicadores); // Usar o nome do enum
+        return new DadosIndicadorHoraMes(ano, mes, origemEnum.name(), indicadores);
+
+
     }
 
 }
