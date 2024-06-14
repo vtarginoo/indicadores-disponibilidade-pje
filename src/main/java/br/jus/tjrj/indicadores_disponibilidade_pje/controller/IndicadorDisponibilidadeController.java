@@ -87,6 +87,26 @@ public class IndicadorDisponibilidadeController {
         return ResponseEntity.ok(IndicadorPorMesHoraEOrigem);
     }
 
+    @GetMapping("/{origem}/comparacao")
+    @Operation(summary = "Obter detalhes comparativos por hora de um indicador (D, D-7 e D-14)",
+            description = "Retorna os dados por hora de um indicador para a data especificada, 7 dias antes e 14 dias antes.")
+    public ResponseEntity<List<DadosIndicadorHora>> obterDetalhesComparacao(
+            @PathVariable Origem.OrigemEnum origem,
+            @RequestParam @PastOrPresent(message = "A data selecionada deverá ser a de hoje ou passada.")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate data
+    ) {
+        // Validação manual
+        LocalDate dataMinima = LocalDate.of(2010, 1, 1);
+        if (data.isBefore(dataMinima)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A data selecionada deverá ser superior à 2010.");
+        }
+
+        List<DadosIndicadorHora> indicadores = indicadorService.obterIndicadoresComparacao(origem, data);
+        return ResponseEntity.ok(indicadores);
+    }
+
+
+
 
 
 }

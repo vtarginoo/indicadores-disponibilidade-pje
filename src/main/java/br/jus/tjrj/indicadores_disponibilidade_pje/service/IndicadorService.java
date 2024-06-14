@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -131,6 +132,26 @@ public class IndicadorService {
 
     }
 
+    public List<DadosIndicadorHora> obterIndicadoresComparacao(Origem.OrigemEnum origem, LocalDate data) {
+
+        List<DadosIndicadorHora> indicadores = new ArrayList<>();
+
+        // Obter dados para a data de referência
+        DadosIndicadorHora dadosReferencia = obterIndicadorPorDiaHoraEOrigem(data, origem);
+        indicadores.add(dadosReferencia);
+
+        // Obter dados para 7 dias antes da data de referência
+        LocalDate dataMenos7 = data.minusDays(7);
+        DadosIndicadorHora dadosMenos7 = obterIndicadorPorDiaHoraEOrigem(dataMenos7, origem);
+        indicadores.add(dadosMenos7);
+
+        // Obter dados para 14 dias antes da data de referência
+        LocalDate dataMenos14 = data.minusDays(14);
+        DadosIndicadorHora dadosMenos14 = obterIndicadorPorDiaHoraEOrigem(dataMenos14, origem);
+        indicadores.add(dadosMenos14);
+
+        return indicadores;
+    }
 }
 
 
