@@ -41,6 +41,7 @@ public class IndicadorDisponibilidadeController {
         return ResponseEntity.ok(mediasMensaisMes);
     }
 
+    //allDays
     @GetMapping("/allDays/{ano}")
     @Operation(summary = "Obter todos os indicadores de um ano específico por dia",
             description = "Retorna os dados do indicador para uma determinado ano por dia")

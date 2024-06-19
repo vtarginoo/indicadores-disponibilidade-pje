@@ -65,28 +65,33 @@ public class IndicadorService {
     public List<DadosIndicadoresDia> indicadoresPorDia(int ano) {
         List<IndicadoresDiaProjection> resultados = repository.findIndicadoresPorDiaAgrupados(ano);
 
+
         if (resultados.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para o período especificado.");
         }
 
+
+
         Map<LocalDate, List<DadosIndicadoresDia.IndicadorDiario>> indicadoresPorData = resultados.stream()
                 .collect(Collectors.groupingBy(
-                        IndicadoresDiaProjection::getData, // Corrigindo o nome
+                        IndicadoresDiaProjection::getData,
                         Collectors.mapping(
-                                p -> new DadosIndicadoresDia.IndicadorDiario(p.getOrigem().name(), p.getQuantidade()),
+                                p -> new DadosIndicadoresDia.IndicadorDiario(p.getOrigem().name(),
+                                        p.getQuantidade()),
                                 Collectors.toList()
                         )
                 ));
 
+
         return indicadoresPorData.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey()) // Ordena pelo LocalDate (chave do mapa)
                 .map(entry -> {
                     LocalDate data = entry.getKey();
                     List<DadosIndicadoresDia.IndicadorDiario> indicadores = entry.getValue();
                     return new DadosIndicadoresDia(data.getYear(), data.getMonthValue(),
                             data.getDayOfWeek().getValue(), data.getDayOfMonth(), indicadores);
                 })
-                .collect(Collectors.toList());
-    }
+                .collect(Collectors.toList());}
 
     public DadosIndicadorHora obterIndicadorPorDiaHoraEOrigem(LocalDate data, Origem.OrigemEnum origem) {
         List<IndicadorDisponibilidade> indicadores = repository.findByOrigemAndData(origem, data);

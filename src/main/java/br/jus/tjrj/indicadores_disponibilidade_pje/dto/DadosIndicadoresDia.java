@@ -25,7 +25,7 @@ public record DadosIndicadoresDia(
             String origem,
 
             @NotNull @PositiveOrZero
-            double media
+            int quantidade
     ) {}
 }
 

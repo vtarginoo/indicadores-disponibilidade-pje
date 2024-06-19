@@ -25,7 +25,7 @@ public interface IndicadorRepository extends JpaRepository<IndicadorDisponibilid
 
 
     @Query("SELECT i.data as data, i.diaDaSemana as diaDaSemana, DAY(i.data) as dia, " +
-            "i.origem.origem as origem, SUM(i.quantidade) as quantidade " + // Corrigindo a seleção da origem
+            "i.origem.origem as origem, SUM(i.quantidade) as quantidade " +
             "FROM IndicadorDisponibilidade i " +
             "WHERE YEAR(i.data) = :ano " +
             "GROUP BY i.data, i.diaDaSemana, DAY(i.data), i.origem.origem") // Agrupando pela origem corretamente
