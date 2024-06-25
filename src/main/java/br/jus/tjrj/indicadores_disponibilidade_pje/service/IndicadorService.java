@@ -13,18 +13,15 @@ import br.jus.tjrj.indicadores_disponibilidade_pje.repository.IndicadorRepositor
 import br.jus.tjrj.indicadores_disponibilidade_pje.repository.OrigemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 
-
-import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 
 @Service
 public class IndicadorService {
@@ -94,7 +91,7 @@ public class IndicadorService {
                 .collect(Collectors.toList());}
 
     public DadosIndicadorHora obterIndicadorPorDiaHoraEOrigem(LocalDate data, Origem.OrigemEnum origem) {
-        List<IndicadorDisponibilidade> indicadores = repository.findByOrigemAndData(origem, data);
+        List<IndicadorDisponibilidade> indicadores = repository.findByOrigemOrigemAndData(origem, data);
 
         if (indicadores.isEmpty()) {
             throw new EntityNotFoundException("Não há dados disponíveis para a data e origem especificadas.");

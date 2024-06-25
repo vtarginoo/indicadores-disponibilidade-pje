@@ -32,11 +32,9 @@ public interface IndicadorRepository extends JpaRepository<IndicadorDisponibilid
     List<IndicadoresDiaProjection> findIndicadoresPorDiaAgrupados(@Param("ano") int ano);
 
 
-    @Query("SELECT i FROM IndicadorDisponibilidade i " +
-            "WHERE i.origem.origem = :origem AND i.data = :data")
-    List<IndicadorDisponibilidade> findByOrigemAndData(
-            @Param("origem") Origem.OrigemEnum origem,
-            @Param("data") LocalDate data
+    List<IndicadorDisponibilidade> findByOrigemOrigemAndData(
+            Origem.OrigemEnum origem,
+            LocalDate data
     );
 
 
