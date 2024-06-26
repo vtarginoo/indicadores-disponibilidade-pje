@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -46,7 +47,8 @@ public class IndicadorService {
                         Collectors.mapping(
                                 p -> {
                                     YearMonth yearMonth = YearMonth.of(ano, p.getMes());
-                                    double mediaDiaria = Math.round((p.getSomaQuantidade().doubleValue() / yearMonth.lengthOfMonth()) * 100.0) / 100.0;
+                                    double mediaDiaria = Math.round(
+                                            (p.getSomaQuantidade().doubleValue() / yearMonth.lengthOfMonth()) * 100.0) / 100.0;
                                     return new DadosMediaMes.IndicadorMensal(p.getOrigem(), mediaDiaria);
                                 },
                                 Collectors.toList()
@@ -90,7 +92,10 @@ public class IndicadorService {
                 })
                 .collect(Collectors.toList());}
 
+
+
     public DadosIndicadorHora obterIndicadorPorDiaHoraEOrigem(LocalDate data, Origem.OrigemEnum origem) {
+
         List<IndicadorDisponibilidade> indicadores = repository.findByOrigemOrigemAndData(origem, data);
 
         if (indicadores.isEmpty()) {
@@ -99,6 +104,8 @@ public class IndicadorService {
 
         List<DadosIndicadorHora.IndicadorHora> indicadoresHora = indicadores.stream()
                 .map(indicador -> new DadosIndicadorHora.IndicadorHora(indicador.getHora(), indicador.getQuantidade()))
+                // Ordenação por hora em ordem crescente:
+                .sorted(Comparator.comparingInt(DadosIndicadorHora.IndicadorHora::getHora))
                 .collect(Collectors.toList());
 
         IndicadorDisponibilidade primeiroIndicador = indicadores.get(0);
@@ -115,9 +122,10 @@ public class IndicadorService {
     }
 
 
+
     public DadosIndicadorHoraMes obterIndicadorPorMesHoraEOrigem(Origem.OrigemEnum origemEnum, int mes, int ano) {
         Origem origemEntity = origemRepository.findByOrigem(origemEnum)
-                .orElseThrow(() -> new EntityNotFoundException("Origem não encontrada: " + origemEnum));
+                .orElseThrow(() -> new EntityNotFoundException("Não há dados disponíveis para a data e origem especificadas."));
 
         List<IndicadorHoraMesProjection> resultados = repository.findByOrigemEMesEAno(origemEnum, mes, ano);
 

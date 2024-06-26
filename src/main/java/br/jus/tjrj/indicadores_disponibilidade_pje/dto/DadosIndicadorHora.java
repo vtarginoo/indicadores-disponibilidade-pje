@@ -2,6 +2,7 @@ package br.jus.tjrj.indicadores_disponibilidade_pje.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
+import lombok.Getter;
 
 import java.util.List;
 
@@ -57,10 +58,12 @@ public record DadosIndicadorHora(
          public record IndicadorHora(
                  @Schema(description = "Hora do dia (0-23)", example = "10", minimum = "0", maximum = "23")
                  @NotNull @Min(0) @Max(23)
+                 @Getter
                  int hora,
 
                  @Schema(description = "Quantidade", example = "150", minimum = "0")
                  @NotNull @Min(0)
+                 @Getter
                  int quantidade
          ) {}
 

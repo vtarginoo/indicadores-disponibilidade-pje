@@ -28,7 +28,7 @@ public class Origem {
     // Enum dentro da entidade Origem
     public enum OrigemEnum {
         distribuicao,
-        publicacao_do,
+        publicacao_dj,
         grerj_vinculada
     }
 

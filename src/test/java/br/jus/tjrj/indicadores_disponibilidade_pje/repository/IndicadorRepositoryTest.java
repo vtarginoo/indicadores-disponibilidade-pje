@@ -63,7 +63,7 @@ class IndicadorRepositoryTest {
                     .collect(Collectors.groupingBy(MediaIndicadorPorMesProjection::getMes));
 
             // 2. Verificar se os 3 indicadores estão presentes em todos os meses:
-            List<String> origensEsperadas = List.of("distribuicao", "grerj_vinculada", "publicacao_do"); // Adapte para suas origens
+            List<String> origensEsperadas = List.of("distribuicao", "grerj_vinculada", "publicacao_dj"); // Adapte para suas origens
 
             // Verificar cada mês
             for (int mes = 1; mes <= 12; mes++) {
@@ -124,7 +124,7 @@ class IndicadorRepositoryTest {
             assertThat(origensEncontradas).containsExactlyInAnyOrder(
                     Origem.OrigemEnum.distribuicao,
                     Origem.OrigemEnum.grerj_vinculada,
-                    Origem.OrigemEnum.publicacao_do
+                    Origem.OrigemEnum.publicacao_dj
             );
 
 
